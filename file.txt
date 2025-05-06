@@ -1,8 +1,0 @@
-1
-10:00 13:00
-5
-10:05 1 client_p
-10:10 3 client_p
-10:15 1 client_q
-10:20 2 client_q 1
-10:25 4 client_q
