@@ -39,7 +39,7 @@
 
 1.  **Клонируйте репозиторий:**
     ```bash
-    git clone <URL_вашего_репозитория>
+    git clone https://github.com/heartinice/pc-club-monitor.git
     cd pc_club_monitor
     ```
 
