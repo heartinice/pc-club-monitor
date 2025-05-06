@@ -1,0 +1,7 @@
+3
+09:00 19:00
+10
+09:15 1 clienta
+09:30 2 clienta 1
+10:00 4 clienta
+18:55 1 clientb

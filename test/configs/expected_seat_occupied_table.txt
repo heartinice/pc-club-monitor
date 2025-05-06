@@ -1,0 +1,10 @@
+10:00
+10:05 1 client_e
+10:06 1 client_f
+10:10 2 client_e 1
+10:15 2 client_f 1
+10:15 13 PlaceIsBusy
+12:00 11 client_e
+12:00 11 client_f
+12:00
+1 10 01:50

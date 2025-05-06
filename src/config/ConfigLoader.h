@@ -21,6 +21,7 @@ private:
     string filename;  
     static Config config;  
     static bool loaded;  
+    static bool load_failed;
 };
 
 #endif // CONFIGLOADER_H

@@ -26,75 +26,108 @@ void EventProcessor::process(){
 
 void EventProcessor::handleClientArrived(Event event){
     const Config& config = ConfigLoader::getConfig();
-    if(event.time < config.st_time || event.time > config.fin_time){
-        std::cout << ConfigLoader::StrFormatTime(event.time) << " "
-          << 13 << " "
-          << "NotOpenYet" << std::endl;
-    }
-    else if (ClientManager::Get().HasClient(event.name)){
+    if (ClientManager::Get().HasClient(event.name)){
         std::cout << ConfigLoader::StrFormatTime(event.time) << " "
           << 13 << " "
           << "YouShallNotPass" << std::endl;
     }
+    else if(event.time < config.st_time || event.time > config.fin_time){
+        std::cout << ConfigLoader::StrFormatTime(event.time) << " "
+          << 13 << " "
+          << "NotOpenYet" << std::endl;
+    }
+    
     else{
         ClientManager::Get().AddClient(event.name);
     }
 }
 
- void EventProcessor::handleClientTakeTable(Event event){
-    if(!(ClientManager::Get().HasClient(event.name))){
-        std::cout << ConfigLoader::StrFormatTime(event.time) << " "
-          << 13 << " "
-          << "ClientUnknown" << std::endl;
-    }
-    if (TableManager::Get().IsFree(event.tables)){
-        TableManager::Get().AssignClient(event.tables,event.name,event.time);
-    }
-    else{
-        std::cout << ConfigLoader::StrFormatTime(event.time) << " "
-          << 13 << " "
-          << "PlaceIsBusy" << std::endl;
-    }
- }
-
- void EventProcessor::handleClientLeave(Event event) {
+void EventProcessor::handleClientTakeTable(Event event) {
     if (!ClientManager::Get().HasClient(event.name)) {
         std::cout << ConfigLoader::StrFormatTime(event.time) << " "
                   << 13 << " "
                   << "ClientUnknown" << std::endl;
         return;
     }
-    TableManager::Get().ClientLeave(event.name, event.time);
-    ClientManager::Get().Leave(event.name);
-    auto nextClientOpt = ClientManager::Get().PopFromQueue();
-    if (nextClientOpt.has_value()) {
-        auto freeTableOpt = TableManager::Get().FindFreeTable();
-        if (freeTableOpt.has_value()) {
-            TableManager::Get().AssignClient(freeTableOpt.value(), nextClientOpt.value(), event.time);
-            std::cout << ConfigLoader::StrFormatTime(event.time) << " "
-                      << 12 << " "
-                      << nextClientOpt.value() << " "
-                      << freeTableOpt.value() << std::endl;
+
+    if (TableManager::Get().IsFree(event.tables)) {
+        
+        if (ClientManager::Get().IsAtTable(event.name)) {
+            optional<int> currentTable = ClientManager::Get().GetClientTable(event.name);
+            TableManager::Get().ClientLeave(event.name,event.time);
         }
+
+        TableManager::Get().AssignClient(event.tables, event.name, event.time);
+    } else {
+        std::cout << ConfigLoader::StrFormatTime(event.time) << " "
+                  << 13 << " "
+                  << "PlaceIsBusy" << std::endl;
     }
 }
 
+void EventProcessor::handleClientLeave(Event event) {
+    if (!ClientManager::Get().HasClient(event.name)) {
+        std::cout << ConfigLoader::StrFormatTime(event.time) << " "
+                  << 13 << " "
+                  << "ClientUnknown" << std::endl;
+        return;
+    }
 
-void EventProcessor::handleClientWait(Event event){
-    if (TableManager::Get().FindFreeTable().has_value()){
+    
+    TableManager::Get().ClientLeave(event.name, event.time);
+    ClientManager::Get().Leave(event.name);
+
+
+    auto nextClientOpt = ClientManager::Get().PopFromQueue();
+    if (nextClientOpt.has_value()) {
+
+        auto freeTableOpt = TableManager::Get().FindFreeTable();
+        if (freeTableOpt.has_value()) {
+
+            bool assigned = TableManager::Get().AssignClient(freeTableOpt, nextClientOpt.value(), event.time);
+            if (assigned) {
+                std::cout << ConfigLoader::StrFormatTime(event.time) << " "
+                          << 12 << " "
+                          << nextClientOpt.value() << " "
+                          << freeTableOpt.value() << std::endl;
+            } 
+        } else {
+            ClientManager::Get().AddToQueue(nextClientOpt.value());
+        }
+    } 
+}
+
+
+void EventProcessor::handleClientWait(Event event) {
+    const Config& config = ConfigLoader::getConfig();
+
+    if (!ClientManager::Get().HasClient(event.name)) {
         std::cout << ConfigLoader::StrFormatTime(event.time) << " "
-          << 13 << " "
-          << "ICanWaitNoLonger!" << std::endl;
+                  << 13 << " "
+                  << "ClientUnknown" << std::endl;
+        return;
     }
-    if (ClientManager::Get().QueueMax()){
+
+    else if (TableManager::Get().FindFreeTable().has_value()) {
         std::cout << ConfigLoader::StrFormatTime(event.time) << " "
-          << 11 << " "
-          << event.name << std::endl;
+                  << 13 << " "
+                  << "ICanWaitNoLonger!" << std::endl;
+        return;
     }
-    else{
+
+    else if (ClientManager::Get().QueueSize() > config.tables) {
+        ClientManager::Get().Leave(event.name); 
+        std::cout << ConfigLoader::StrFormatTime(event.time) << " "
+                  << 11 << " "
+                  << event.name << std::endl;
+        return;
+    }
+
+    else if (!ClientManager::Get().IsInQueue(event.name)) {
         ClientManager::Get().AddToQueue(event.name);
     }
 }
+
 
 void EventProcessor::handleClubClosing() {
     const Config& config = ConfigLoader::getConfig();

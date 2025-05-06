@@ -16,9 +16,6 @@ public:
     EventParser();
     void parseEvents(const std::string& filename);
 
-private:
-    // Удали, если не используется
-    // Config config; 
 };
 
 #endif // EVENTPARSER_H

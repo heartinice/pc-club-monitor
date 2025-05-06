@@ -41,11 +41,12 @@ bool TableManager::AssignClient(optional<int> tableNumber, const string& clientN
     Table& table = tables[*tableNumber - 1];
 
     if (table.currentClient.has_value()) {
-        return false; // Стол занят
+        return false; 
     }
 
     table.currentClient = clientName;
     table.startTime = currentTime;
+    ClientManager::Get().AssignTable(clientName, *tableNumber,currentTime);
     return true;
 }
 
@@ -57,37 +58,28 @@ optional<int> TableManager::FindFreeTable() const{
     }
     return nullopt;
 }
-
 void TableManager::ClientLeave(const string& name, int time) {
-    optional<int> number;  
-
-    for (const Table& tab : tables) {
+    for (Table& tab : tables) {
         if (tab.currentClient.has_value() && tab.currentClient.value() == name) {
-            number = tab.number;
-            break;
+            if (!tab.startTime.has_value()) return;
+
+            int duration = time - tab.startTime.value();
+            if (duration <= 0) return;
+
+            int hoursToCharge = (duration + 59) / 60;  
+            int payment = hoursToCharge * hourRate;
+
+            tab.totalOccupiedTime += duration;
+            tab.totalRevenue += payment;
+
+            tab.currentClient = nullopt;
+            tab.startTime = nullopt;
+
+            return;  
         }
     }
-
-    if (!number.has_value()) {
-        return;
-    }
-
-    Table& table = tables[*number - 1];
-
-    if (!table.startTime.has_value()) return;
-
-    int duration = time - table.startTime.value();
-    if (duration <= 0) return;
-
-    int hoursToCharge = (duration + 59) / 60;  
-    int payment = hoursToCharge * hourRate;
-
-    table.totalOccupiedTime += duration;
-    table.totalRevenue += payment;
-
-    table.currentClient = nullopt;
-    table.startTime = nullopt;
 }
+
 
 void TableManager::PrintReport() {
     for (const Table& table : tables) {

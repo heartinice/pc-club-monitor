@@ -11,11 +11,9 @@ void EventParser::parseEvents(const std::string& filename) {
 
     std::string line;
 
-    // Пропустить первые 3 строки
     for (int i = 0; i < 3 && std::getline(file, line); ++i) {
-        // Пропуск конфигурации
     }
-
+    optional<std::string> previousEventTimeStr;
     while (std::getline(file, line)) {
         std::istringstream iss(line);
         std::string time;
@@ -29,16 +27,18 @@ void EventParser::parseEvents(const std::string& filename) {
                 table_num = temp;
             }
             if (!(Validator::IsValidTimeFormat(time) &&
+                  Validator::IsTimeSequential(time,previousEventTimeStr) &&
                   Validator::IsValidId(id) &&
                   Validator::isValidName(name) &&
                   Validator::IsValidNumTables(table_num))) {
                 std::cerr << "Невалидная строка: " << line << std::endl;
                 exit(1);
             }
-            cout << line << endl; //обдумать тут вывод строки 
+            cout << line << endl; 
             Event event(ConfigLoader::TimeToInt(time), id, name, table_num);
             EventProcessor processor(event);
             processor.process();
+            previousEventTimeStr = time;
         } else {
             std::cerr << "Ошибка чтения строки: " << line << std::endl;
             cout << line << endl;

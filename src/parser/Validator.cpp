@@ -1,4 +1,10 @@
+// Validator.cpp
 #include "Validator.h"
+#include "../config/ConfigLoader.h"
+#include <regex>
+#include <cctype>
+#include <set>
+#include <sstream>
 
 Validator::Validator(){};
 
@@ -28,19 +34,14 @@ bool Validator::isValidName(const std::string& name) {
             return false;
         }
     }
-    return !name.empty(); 
+    return !name.empty();
 }
 
 bool Validator::IsValidNumTables(const optional<int>& num){
-    const Config& config = ConfigLoader::getConfig();
-    if (num == nullopt || (num > 0 && num <= config.tables)){
-        return true;
-    }
-    return false;
+    return true;
 }
 
 bool Validator::IsValidTableCount(const std::string& line) {
-    // Целое положительное число
     std::regex pattern(R"(^\d+$)");
     if (!std::regex_match(line, pattern)) return false;
     int num = std::stoi(line);
@@ -48,7 +49,6 @@ bool Validator::IsValidTableCount(const std::string& line) {
 }
 
 bool Validator::IsValidWorkingHours(const std::string& line) {
-    // Пример: 10:00 22:00
     std::regex pattern(R"(^\d{2}:\d{2} \d{2}:\d{2}$)");
     if (!std::regex_match(line, pattern)) return false;
 
@@ -60,10 +60,27 @@ bool Validator::IsValidWorkingHours(const std::string& line) {
 }
 
 bool Validator::IsValidHourlyRate(const std::string& line) {
-    // Целое положительное число
     std::regex pattern(R"(^\d+$)");
     if (!std::regex_match(line, pattern)) return false;
     int rate = std::stoi(line);
     return rate > 0;
 }
 
+bool Validator::IsTimeSequential(const std::string& currentTime, const std::optional<std::string>& previousTime) {
+    if (previousTime.has_value()) {
+        if (!IsValidTimeFormat(previousTime.value())) {
+            return true;
+        }
+
+        int currentTimeInt = ConfigLoader::TimeToInt(currentTime);
+        int previousTimeInt = ConfigLoader::TimeToInt(previousTime.value());
+
+        return currentTimeInt >= previousTimeInt;
+    }
+    return true;
+}
+
+bool Validator::IsValidTableNumber(const std::optional<int>& tableNumber) {
+    const Config& config = ConfigLoader::getConfig();
+    return tableNumber.has_value() && tableNumber.value() >= 1 && tableNumber.value() <= config.tables;
+}

@@ -1,0 +1,9 @@
+09:00
+09:10 1 client_j
+09:15 2 client_j 1
+09:20 1 client_k
+09:25 3 client_k
+10:00 11 client_j
+10:00 11 client_k
+10:00
+1 10 00:45

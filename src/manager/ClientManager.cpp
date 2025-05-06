@@ -48,9 +48,8 @@ bool ClientManager::AddToQueue(const std::string& name) {
     return true;
 }
 
-bool ClientManager::QueueMax() const {
-    const Config& config = ConfigLoader::getConfig();
-    return queue.size() > config.tables;
+int ClientManager::QueueSize() const {
+    return queue.size();
 }
 
 bool ClientManager::HasWaitingClients() const {
@@ -79,4 +78,18 @@ std::optional<int64_t> ClientManager::GetClientStartTime(const std::string& name
         return it->second.st_time;
     }
     return std::nullopt;
+}
+
+optional<int> ClientManager::GetClientTable(const string& name)const{
+    auto it = clientsInClub.find(name);
+    if (it != clientsInClub.end()) {
+        return it->second.table;
+    }
+    return nullopt;
+}
+
+// Проверка, существует ли клиент в очереди
+bool ClientManager::IsInQueue(const std::string& clientName) {
+    // Ищем клиента в очереди
+    return std::find(queue.begin(), queue.end(), clientName) != queue.end();
 }

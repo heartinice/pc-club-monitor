@@ -27,12 +27,11 @@ public:
     std::vector<Table> tables;
 
 private:
-    // Приватный конструктор и запрет копирования/перемещения
+    
     TableManager() = default;
     TableManager(const TableManager&) = delete;
     TableManager& operator=(const TableManager&) = delete;
 
-    // Внутренняя инициализация (однократная)
     void Initialize(int count, int rate);
     const Config& config = ConfigLoader::getConfig();
     

@@ -1,8 +1,11 @@
 #include "ConfigLoader.h"
 #include "../parser/Validator.h"
+#include <iostream> // Для std::cerr
+#include <cstdlib>  // Для exit()
 
-Config ConfigLoader::config; //обдумать делать ли статические переменные 
+Config ConfigLoader::config;
 bool ConfigLoader::loaded = false;
+bool ConfigLoader::load_failed = false; 
 
 ConfigLoader::ConfigLoader(const string& filename) : filename(filename) {}
 
@@ -24,23 +27,25 @@ int ConfigLoader::TimeToInt(const string& time) {
 void ConfigLoader::base_info() {
     if (loaded) {
         std::cout << "Конфигурация уже загружена!" << std::endl;
-        return; 
+        return;
     }
 
     std::ifstream file(filename);
 
     if (!file.is_open()) {
         std::cerr << "Ошибка открытия файла: " << filename << std::endl;
-        return;
+        exit(1); 
     }
 
-    // Проверяем размер файла
+    
     file.seekg(0, std::ios::end);
     std::streampos fileSize = file.tellg();
     file.seekg(0, std::ios::beg);
 
     if (fileSize == 0) {
         std::cout << "Файл конфигурации пуст" << std::endl;
+        file.close();
+        exit(1); 
         return;
     }
 
@@ -48,47 +53,69 @@ void ConfigLoader::base_info() {
 
     try {
         std::getline(file, line);
-        if(Validator::IsValidTableCount(line))
-        config.tables = std::stoi(line);
-    } catch (const std::invalid_argument& e) {
-        std::cerr << "Ошибка при чтении количества столов: " << e.what() << std::endl;
-        return;
-    }
-
-    try {
-        std::getline(file, line);
-        std::istringstream iss(line);
-        std::string open_str, fin_str;
-        if (!(iss >> open_str >> fin_str)) {
-            std::cerr << "Ошибка при чтении времени открытия/закрытия: некорректный формат строки" << std::endl;
+        if (Validator::IsValidTableCount(line)) {
+            config.tables = std::stoi(line);
+        } else {
+            std::cerr << "Ошибка: некорректный формат количества столов: " << line << std::endl;
+            file.close();
+            throw std::runtime_error("Ошибка: некорректный формат количества столов");
             return;
         }
-        if(Validator::IsValidWorkingHours(line)){
-            config.st_time = TimeToInt(open_str);
-            config.fin_time = TimeToInt(fin_str);
-        }
-        cout << open_str << endl;
     } catch (const std::invalid_argument& e) {
-        std::cerr << "Ошибка при преобразовании времени: " << e.what() << std::endl;
+        std::cerr << "Ошибка при преобразовании количества столов: " << e.what() << std::endl;
+        file.close();
+        exit(1); 
         return;
     }
 
     try {
         std::getline(file, line);
-        if(Validator::IsValidHourlyRate(line))
-        config.coast = std::stoi(line);
+        if (Validator::IsValidWorkingHours(line)) {
+            std::istringstream iss(line);
+            std::string open_str, fin_str;
+            iss >> open_str >> fin_str;
+            cout << open_str << endl; 
+            config.st_time = TimeToInt(open_str);
+            config.fin_time = TimeToInt(fin_str);
+        } else {
+            std::cerr << "Ошибка: некорректный формат времени: " << line << std::endl;
+            file.close();
+            std::runtime_error("Ошибка: некорректный формат времени");
+            return;
+        }
+        
     } catch (const std::invalid_argument& e) {
-        std::cerr << "Ошибка при чтении стоимости: " << e.what() << std::endl;
+        std::cerr << "Ошибка при преобразовании времени: " << e.what() << std::endl;
+        file.close();
+        exit(1); 
         return;
     }
-    
-    loaded = true; 
+
+    try {
+        std::getline(file, line);
+        if (Validator::IsValidHourlyRate(line)) {
+            config.coast = std::stoi(line);
+        } else {
+            std::cerr << "Ошибка: некорректный формат стоимости: " << line << std::endl;
+            file.close();
+            std::runtime_error("Ошибка: некорректный формат стоимости");
+            return;
+        }
+    } catch (const std::invalid_argument& e) {
+        std::cerr << "Ошибка при чтении стоимости: " << e.what() << std::endl;
+        file.close();
+        exit(1); 
+        return;
+    }
+
+    file.close();
+    loaded = true;
 }
 
 const Config& ConfigLoader::getConfig() {
     if (!loaded) {
-        std::cerr << "Ошибка: конфигурация не была загружена!" << std::endl;
-        throw std::runtime_error("Конфигурация не была загружена!");
+        std::cerr << "Ошибка: конфигурация не была успешно загружена." << std::endl;
+        return config;
     }
-    return config; 
+    return config;
 }
